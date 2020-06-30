@@ -1,0 +1,68 @@
+{
+    "variables": {
+        "OSID": "387"
+    },
+    "builders": [
+        {
+            "type": "qemu",
+            "iso_url": "http://cdimage.ubuntu.com/releases/20.04/beta/ubuntu-20.04-beta-server-amd64.iso",
+            "iso_checksum": "412e8ed419d7ca7e1cfc533ee4e2220e01da706c72033d3b4e35a177fd10595f",
+            "iso_checksum_type": "sha256",
+            "output_directory": "ubuntu-20.04-x86_64",
+            "shutdown_command": "shutdown -P now",
+            "disk_size": 4000,
+            "format": "raw",
+            "headless": true,
+            "http_directory": "image/ubuntu_2004/http",
+            "http_port_min": 8081,
+            "http_port_max": 8081,
+            "communicator": "ssh",
+            "ssh_username": "packer",
+            "ssh_password": "packer",
+            "ssh_port": 22,
+            "ssh_timeout": "60m",
+            "vm_name": "image.raw",
+            "boot_wait": "15s",
+            "boot_command": [
+                "<enter><wait><f6><wait><esc><wait>",
+                "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+                "url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.txt vga=788 initrd=/install/initrd.gz locale=en_US.UTF-8 keyboard-configuration/layoutcode=us netcfg/get_hostname=guest --- <enter>"
+            ],
+            "accelerator": "kvm",
+            "net_device": "virtio-net",
+            "disk_interface": "virtio",
+            "vnc_port_min": 5949,
+            "vnc_port_max": 5949,
+            "qemuargs": [
+                [
+                    "-m",
+                    "1024"
+                ]
+            ]
+        }
+    ],
+    "provisioners": [
+        {
+            "type": "shell",
+            "script": "image/ubuntu_2004/init_folder.sh"
+        },
+        {
+            "type": "file",
+            "source": "image/ubuntu_2004/imageboot/",
+            "destination": "/opt/imageboot/"
+        },
+        {
+            "type": "file",
+            "source": "image/ubuntu_2004/ethcon/",
+            "destination": "/opt/ethcon/"
+        },
+        {
+            "type": "shell",
+            "script": "image/ubuntu_2004/provision.sh"
+        },
+        {
+            "type": "shell",
+            "script": "image/ubuntu_2004/flush.sh"
+        }
+    ]
+}

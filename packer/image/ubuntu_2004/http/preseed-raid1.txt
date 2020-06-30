@@ -1,0 +1,136 @@
+
+### based on /cdrom/doc/install/manual/en/apbs04.html
+
+### ------------------------------
+
+### Server ISO seed
+
+# This block contains the seed file shipped with the Ubuntu 19.10 image. Since we use a custom seed, we first need to apply these default seed settings.
+# The original seed is on the server ISO: /cdrom/preseed/ubuntu-server.seed.
+
+# Suggest LVM by default.
+d-i	partman-auto/init_automatically_partition	string some_device_lvm
+d-i	partman-auto/init_automatically_partition	seen false
+# Install the Ubuntu Server seed.
+tasksel	tasksel/force-tasks	string server
+# Only install basic language packs. Let tasksel ask about tasks.
+d-i	pkgsel/language-pack-patterns	string
+# No language support packages.
+d-i	pkgsel/install-language-support	boolean false
+# Only ask the UTC question if there are other operating systems installed.
+d-i	clock-setup/utc-auto	boolean true
+# Verbose output and no boot splash screen.
+d-i	debian-installer/quiet	boolean false
+d-i	debian-installer/splash	boolean false
+# Install the debconf oem-config frontend (if in OEM mode).
+d-i	oem-config-udeb/frontend	string debconf
+# Wait for two seconds in grub
+d-i	grub-installer/timeout	string 2
+# Add the network and tasks oem-config steps by default.
+oem-config	oem-config/steps	multiselect language, timezone, keyboard, user, network, tasks
+
+
+### ------------------------------
+
+### B.4.1. Localization
+
+d-i debian-installer/locale string en_US
+d-i localechooser/supported-locales en_US.UTF-8
+d-i console-setup/ask_detect boolean false
+d-i keyboard-configuration/layoutcode string us
+
+### B.4.2. Network configuration
+
+d-i netcfg/get_hostname string guest
+d-i netcfg/get_domain string unassigned-domain
+d-i netcfg/wireless_wep string
+d-i hw-detect/load_firmware boolean true
+
+### B.4.4. Mirror settings
+
+# If you select ftp, the mirror/country string does not need to be set.
+#d-i mirror/protocol string ftp
+d-i mirror/country string manual
+d-i mirror/http/hostname string archive.ubuntu.com
+d-i mirror/http/directory string /ubuntu/
+d-i mirror/http/proxy string
+
+d-i clock-setup/utc boolean true
+d-i time/zone string UTC
+
+d-i clock-setup/ntp boolean true
+d-i clock-setup/ntp-server string time.constant.com
+
+### B.4.7. Partitioning
+
+# made using example on apbs04.html page
+
+d-i partman-auto/method string raid
+# specify the disks to be partitioned. they will all get the same layout, so this will only work if the disks are the same size.
+d-i partman-auto/disk string /dev/vda /dev/vdb
+
+# specify physical partitions.
+#  https://wikitech.wikimedia.org/wiki/PartMan/Auto
+#  <debconf template> :: <minimal size> <priority> <maximal size> <parted fs> <limits> <specifiers> .
+d-i partman-auto/expert_recipe string       \
+ multiraid ::                               \
+ 2900 10000 1000000000 raid method{ raid } .
+
+# specify how physical partitions are used for RAID.
+# <raidtype> <devcount> <sparecount> <fstype> <mountpoint> <devices> <sparedevices>
+d-i partman-auto-raid/recipe string \
+ 1 2 0 ext4 / /dev/vda1#/dev/vdb1 .
+
+# make partman automatically partition without confirmation
+d-i partman-md/confirm boolean true
+d-i	partman-md/confirm_nooverwrite boolean true
+d-i partman-partitioning/confirm_write_new_label boolean true
+d-i partman/choose_partition select finish
+d-i partman/confirm boolean true
+d-i partman/confirm_nooverwrite boolean true
+
+### B.4.8. Base system installation
+
+# skip "recommended" packages"
+d-i base-installer/install-recommends boolean false
+
+d-i passwd/make-user boolean false
+d-i passwd/root-login boolean true
+
+### B.4.9. Apt setup
+
+# You can choose to install restricted and universe software, or to install software from the backports repository.
+d-i apt-setup/restricted boolean true
+d-i apt-setup/universe boolean true
+
+### B.4.10. Package selection
+
+tasksel tasksel/first multiselect  openssh-server server
+
+# Individual additional packages to install
+d-i pkgsel/include string openssh-server ca-certificates
+d-i pkgsel/language-packs multiselect en
+d-i pkgsel/update-policy select none
+
+# Some versions of the installer can report back on what software you have installed, and what software you use.
+popularity-contest popularity-contest/participate boolean true
+
+### B.4.11. Boot loader installation
+
+d-i grub-installer/only_debian boolean true
+d-i grub-installer/with_other_os boolean true
+d-i debian-installer/add-kernel-opts string consoleblank=0
+
+### B.4.12. Finishing up the installation
+
+# Avoid that last message about the install being complete.
+d-i finish-install/reboot_in_progress note
+
+### ------------------------------
+
+### Post install commands
+
+d-i preseed/late_command string \
+ in-target /bin/sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config; \
+ in-target /bin/bash -c "/usr/bin/apt-get update 2>&1 > /root/update.txt"; \
+ in-target /bin/bash -c "/usr/bin/apt-get dist-upgrade -y 2>&1 > /root/upgrade.txt"

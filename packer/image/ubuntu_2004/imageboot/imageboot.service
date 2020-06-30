@@ -1,0 +1,12 @@
+[Unit]
+Description=Imageboot
+Requires=local-fs.target network-online.target
+After=local-fs.target network-online.target ethcon.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/bash -c "/bin/bash /opt/imageboot/imageboot.sh >>/var/log/imageboot.log 2>&1"
+
+[Install]
+WantedBy=multi-user.target
